@@ -263,8 +263,12 @@ app.post('/api/crawler/toggle', (req, res) => {
   res.json({ success: true, data: db.crawler_status });
 });
 
-app.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(`🚀 GyanGuru API Server listening on http://localhost:${PORT}`);
-  console.log(`====================================================`);
-});
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`🚀 GyanGuru API Server listening on http://localhost:${PORT}`);
+    console.log(`====================================================`);
+  });
+}
+
+export default app;
