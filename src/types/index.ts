@@ -19,6 +19,36 @@ export interface Notification {
   official_source: string;
   verification_status: string;
   created_at: string;
+  result_format?: 'PDF_TRANSCRIBED' | 'WEB_PORTAL_LINK';
+  portal_url?: string;
+  portal_http_status?: number;
+  portal_latency_ms?: number;
+}
+
+export interface StudentResult {
+  id: string;
+  roll_number: string;
+  application_no: string;
+  candidate_name: string;
+  exam: string;
+  year: number;
+  marks_obtained: number;
+  max_marks: number;
+  percentile: number;
+  all_india_rank: number;
+  state_rank?: number;
+  category: string;
+  result_status: string;
+  allotted_college?: string;
+  pdf_url?: string;
+  official_notice_title: string;
+  published_date: string;
+  subject_marks?: {
+    physics?: number;
+    chemistry?: number;
+    biology_maths?: number;
+  };
+  verification_hash?: string;
 }
 
 export interface MonitoredSource {
@@ -87,3 +117,16 @@ export interface AuditLog {
   action: string;
   details: string;
 }
+
+export interface StatePortal {
+  id: string;
+  state: string;
+  authority: string;
+  exam: string;
+  official_url: string;
+  allotment_url: string;
+  category: 'National' | 'South' | 'North' | 'West' | 'East' | 'Central' | 'Northeast';
+  code: string;
+  status: string;
+}
+

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ExternalLink, ShieldCheck, FileText, Calendar, Building2, CheckCircle2 } from 'lucide-react';
+import { X, ExternalLink, ShieldCheck, FileText, Calendar, Download, CheckCircle2 } from 'lucide-react';
 import { Notification } from '../types';
 
 interface PDFModalProps {
@@ -9,6 +9,8 @@ interface PDFModalProps {
 
 export const PDFModal: React.FC<PDFModalProps> = ({ notification, onClose }) => {
   if (!notification) return null;
+
+  const downloadUrl = `/api/download-pdf?title=${encodeURIComponent(notification.title)}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
@@ -85,7 +87,7 @@ export const PDFModal: React.FC<PDFModalProps> = ({ notification, onClose }) => 
             </div>
           </div>
 
-          {/* Right Column: PDF Verification Card */}
+          {/* Right Column: PDF Verification & Download Card */}
           <div className="space-y-4">
             <div className="p-5 rounded-2xl bg-gradient-to-b from-dark-800 to-dark-900 border border-slate-700/80 space-y-4">
               <div className="flex items-center space-x-2 text-emerald-400">
@@ -111,15 +113,27 @@ export const PDFModal: React.FC<PDFModalProps> = ({ notification, onClose }) => 
                 </div>
               </div>
 
-              <a
-                href={notification.pdf_url}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-500 hover:to-sky-500 text-white font-semibold text-sm shadow-lg shadow-brand-500/25 transition-all"
-              >
-                <span>View Official PDF</span>
-                <ExternalLink className="w-4 h-4" />
-              </a>
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-2">
+                <a
+                  href={downloadUrl}
+                  download
+                  className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Official PDF</span>
+                </a>
+
+                <a
+                  href={downloadUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-dark-800 hover:bg-slate-800 text-slate-300 hover:text-white font-medium text-xs border border-slate-700 transition-all"
+                >
+                  <span>Open PDF in Browser</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
           </div>
         </div>

@@ -29,10 +29,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   GyanGuru
                 </span>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">
-                  AI Edu Intelligence
+                  alerts.gyanguru.vercel.app
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 font-medium">Govt Notification & Document Aggregator</p>
+              <p className="text-[10px] text-slate-400 font-medium">Official Govt KEA & NEET Allotment Engine</p>
             </div>
           </div>
 
