@@ -14,7 +14,7 @@ import {
   inMemoryDB,
   initialSources
 } from './db.js';
-import { runSourceScan, verifyAndPushOfficialSeatAllotment, runAllStatePortalsScan } from './services/scraper.js';
+import { runSourceScan, verifyAndPushOfficialSeatAllotment, runAllStatePortalsScan, scanCustomWebUrl } from './services/scraper.js';
 import { generateOfficialGovtPdf } from './services/pdfGenerator.js';
 
 const app = express();
@@ -140,10 +140,10 @@ app.get('/api/download-pdf', async (req, res) => {
 
 // --- PUBLIC USER PANEL ENDPOINTS ---
 
-// Get all published notifications
+// Get all published notifications (Strict: ONLY items with valid PDF or Web Portal link)
 app.get('/api/notifications', async (req, res) => {
   try {
-    const { category, search, exam } = req.query;
+    const { category, search, exam, state } = req.query;
     let results = [];
 
     if (mongoose.connection.readyState === 1) {
@@ -159,6 +159,38 @@ app.get('/api/notifications', async (req, res) => {
       }
     }
 
+    // STRICT USER WEB RULE: Only push notifications that have an actual verified PDF document or Web Portal link!
+    results = results.filter(n => {
+      const hasPdf = n.pdf_url && n.pdf_url.trim().length > 0 && n.pdf_url !== '#';
+      const hasPortal = n.portal_url && n.portal_url.trim().length > 0 && n.portal_url !== '#';
+      return hasPdf || hasPortal;
+    });
+
+    // Infer state tag if missing
+    results = results.map(n => {
+      if (!n.state) {
+        const text = `${n.title} ${n.official_source} ${n.summary}`.toLowerCase();
+        if (text.includes('karnataka') || text.includes('kea')) n.state = 'Karnataka';
+        else if (text.includes('maharashtra') || text.includes('mahacet')) n.state = 'Maharashtra';
+        else if (text.includes('tamil nadu') || text.includes('tn medical')) n.state = 'Tamil Nadu';
+        else if (text.includes('delhi') || text.includes('ipu')) n.state = 'Delhi';
+        else if (text.includes('kerala') || text.includes('cee')) n.state = 'Kerala';
+        else if (text.includes('uttar pradesh') || text.includes('updme')) n.state = 'Uttar Pradesh';
+        else n.state = 'All India';
+      }
+      return n;
+    });
+
+    // STATE-WISE FILTERING RULE
+    if (state && state !== 'ALL') {
+      const selectedSt = String(state).toLowerCase();
+      results = results.filter(n =>
+        (n.state && n.state.toLowerCase() === selectedSt) ||
+        n.title.toLowerCase().includes(selectedSt) ||
+        n.official_source.toLowerCase().includes(selectedSt)
+      );
+    }
+
     if (category && category !== 'ALL') {
       results = results.filter(n => n.exam.toLowerCase().includes(String(category).toLowerCase()));
     }
@@ -169,6 +201,7 @@ app.get('/api/notifications', async (req, res) => {
         n.title.toLowerCase().includes(q) ||
         n.summary.toLowerCase().includes(q) ||
         n.exam.toLowerCase().includes(q) ||
+        (n.state && n.state.toLowerCase().includes(q)) ||
         n.important_instructions.toLowerCase().includes(q)
       );
     }
@@ -197,7 +230,7 @@ app.get('/api/notifications/:id', async (req, res) => {
 
 // --- STUDENT RESULT LOOKUP ENDPOINTS ---
 
-// Search student result by Roll Number, Application No, or Name
+// Search student result by Roll Number, Application No, CET Number, or Candidate Name
 app.post('/api/student-results/lookup', async (req, res) => {
   try {
     const { query } = req.body;
@@ -209,15 +242,15 @@ app.post('/api/student-results/lookup', async (req, res) => {
     if (mongoose.connection.readyState === 1) {
       result = await StudentResultModel.findOne({
         $or: [
-          { roll_number: { $regex: new RegExp(`^${q}$`, 'i') } },
-          { application_no: { $regex: new RegExp(`^${q}$`, 'i') } },
+          { roll_number: { $regex: new RegExp(q, 'i') } },
+          { application_no: { $regex: new RegExp(q, 'i') } },
           { candidate_name: { $regex: new RegExp(q, 'i') } }
         ]
       });
     } else {
       result = inMemoryDB.studentResults.find(r =>
-        r.roll_number.toLowerCase() === q ||
-        r.application_no.toLowerCase() === q ||
+        r.roll_number.toLowerCase().includes(q) ||
+        r.application_no.toLowerCase().includes(q) ||
         r.candidate_name.toLowerCase().includes(q)
       );
     }
@@ -225,7 +258,7 @@ app.post('/api/student-results/lookup', async (req, res) => {
     if (!result) {
       return res.status(404).json({
         success: false,
-        message: `No record found for Roll / App No "${query}". Please check the details or try roll numbers: 240410198421, 240410198422, or 2026KCET0984.`
+        message: `No record found for Roll / App No "${query}". Please check the details or try CET / Roll numbers: JS770, 240410198421, or 2026KCET0984.`
       });
     }
 
@@ -464,6 +497,19 @@ app.post('/api/sources', async (req, res) => {
 app.post('/api/sources/:id/scan', async (req, res) => {
   try {
     const result = await runSourceScan(req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Scan any custom user-provided web URL (Condition 1: PDF to DB, Condition 2: Direct Web Link)
+app.post('/api/admin/scan-custom-url', async (req, res) => {
+  try {
+    const { url, title } = req.body;
+    if (!url) return res.status(400).json({ success: false, message: 'Web URL is required' });
+
+    const result = await scanCustomWebUrl({ webUrl: url, customTitle: title });
     res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

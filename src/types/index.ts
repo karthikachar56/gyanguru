@@ -2,6 +2,7 @@ export interface Notification {
   id: string;
   document_id: string;
   exam: string;
+  state?: string;
   year: number;
   notification_type: string;
   badge_type: string;

@@ -59,6 +59,7 @@ const NotificationSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   document_id: { type: String, required: true },
   exam: { type: String, required: true },
+  state: { type: String, default: 'All India' },
   year: { type: Number, required: true },
   notification_type: { type: String, required: true },
   badge_type: { type: String, required: true },
@@ -240,6 +241,7 @@ const initialNotifications = [
     id: 'notif_1',
     document_id: 'doc_101',
     exam: 'NEET UG',
+    state: 'All India',
     year: 2026,
     notification_type: 'Result Declaration',
     badge_type: '🔴 Result Announced',
@@ -264,6 +266,7 @@ const initialNotifications = [
     id: 'notif_2',
     document_id: 'doc_102',
     exam: 'KCET',
+    state: 'Karnataka',
     year: 2026,
     notification_type: 'Counselling Schedule',
     badge_type: '🟡 Registration Open',
@@ -380,6 +383,27 @@ const initialStudentResults = [
     published_date: '2026-08-20',
     subject_marks: { physics: 56, chemistry: 54, biology_maths: 58 },
     verification_hash: 'SHA256-KEA2026-0984-BMSCE'
+  },
+  {
+    id: 'res_2004',
+    roll_number: 'JS770',
+    application_no: '26316656',
+    candidate_name: 'Sinchana Nagesh Naik',
+    exam: 'KCET',
+    year: 2026,
+    marks_obtained: 172,
+    max_marks: 180,
+    percentile: 99.96,
+    all_india_rank: 8,
+    state_rank: 8,
+    category: 'OBC',
+    result_status: 'ROUND 2 SEAT ALLOTTED & OPTION ENTRY CONFIRMED',
+    allotted_college: 'RV College of Engineering (Computer Science Engineering)',
+    pdf_url: 'https://cetonline.karnataka.gov.in/kea/ugcet2026',
+    official_notice_title: 'KEA UGCET 2026 Round 2 Allotment & Payment Receipt KEAUGCET_2026JS7701786266839',
+    published_date: '2026-08-09',
+    subject_marks: { physics: 58, chemistry: 56, biology_maths: 58 },
+    verification_hash: 'SHA256-KEAUGCET_2026JS7701786266839'
   }
 ];
 
@@ -414,6 +438,13 @@ export async function seedDatabaseIfEmpty() {
     if (studentResCount === 0) {
       console.log('[MongoDB Atlas] Seeding initial student result records...');
       await StudentResultModel.insertMany(initialStudentResults);
+    } else {
+      // Ensure Sinchana Nagesh Naik is seeded
+      await StudentResultModel.updateOne(
+        { roll_number: 'JS770' },
+        { $setOnInsert: initialStudentResults[3] },
+        { upsert: true }
+      );
     }
 
     const logsCount = await AuditLogModel.countDocuments();
